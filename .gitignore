@@ -1,0 +1,10 @@
+# Build directory.
+build/
+
+# Objects and output files.
+*.o
+*.bin
+*.g3a
+
+# Misc.
+.DS_Store
