@@ -9,11 +9,16 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <fxcg/display.h>
 #include <fxcg/keyboard.h>
 #include <fxcg/heap.h>
 #include <fxcg/misc.h>
 #include "fpconv.h"
+#include "itoa.h"
+
+// Private methods.
+void show_stack_lines(const stack_t stack, const bool input_line);
 
 
 /**
@@ -33,9 +38,6 @@ void stack_init(stack_t *stack) {
  */
 void stack_show(stack_t *stack) {
 	int key;
-	int curch;
-	char line[DISPLAY_MAX_X_CHARS];
-	char numstr[25];
 
 	while (true) {
 		// Clear the screen.
@@ -43,62 +45,7 @@ void stack_show(stack_t *stack) {
 		DisplayStatusArea();
 		
 		// Show stack items.
-		for (int i = 0; i < DISPLAY_MAX_LINES; i++) {
-			curch = 0;
-			
-			// Append garbage characters.
-			line[curch++] = ' ';
-			line[curch++] = ' ';
-			
-			// Append stack number.
-			itoa(i, line + 2);
-			
-			// Append : and space.
-			for (int j = curch; j < DISPLAY_MAX_X_CHARS; j++) {
-				if (line[j] == '\0') {
-					curch = j;
-					
-					line[curch++] = ':';
-					line[curch++] = ' ';
-					line[curch++] = '\0';
-					
-					break;
-				}
-			}
-			
-			// Check if it is a empty or populated stack position.
-			if (i < (*stack).count) {
-				// Convert number to string.
-				int strlen = fpconv_dtoa((*stack).array[i], numstr);
-				numstr[strlen] = '\0';
-				curch--;
-				
-				// Append the number to the line string with a fixed precision.
-				int aftercomma = strlen;
-				for (int j = 0; j < (DISPLAY_MAX_X_CHARS - curch); j++) {
-					// Check if we reached the end already.
-					if (numstr[j] == '\0') {
-						break;
-					} else if ((j - aftercomma) > FLOAT_PRECISION) {
-						break;
-					}
-					
-					line[curch++] = numstr[j];
-					
-					// Start counting the fixed precision.
-					if ((numstr[j] == '.') && (j < aftercomma)) {
-						aftercomma = j;
-					}
-				}
-				
-				// Finish the line string.
-				line[curch++] = '\0';
-			}
-			
-			// Display the stack line.
-			PrintXY(1, DISPLAY_MAX_LINES - i, line,
-					TEXT_MODE_NORMAL, TEXT_COLOR_BLACK);
-		}
+		show_stack_lines(*stack, true);
 		
 		// Wait until a key is pressed.
 		GetKey(&key);
@@ -119,13 +66,97 @@ void stack_show(stack_t *stack) {
 }
 
 /**
+ * Show the stack lines on screen.
+ * 
+ * @param stack      Stack structure.
+ * @param input_line Leave a blank line at the bottom for user input?
+ */
+void show_stack_lines(const stack_t stack, const bool input_line) {
+	int8_t curch;
+	char line[DISPLAY_MAX_X_CHARS];
+	char numstr[25];
+	int8_t max_lines =  DISPLAY_MAX_LINES;
+	
+	// If the input line is active then remove one of the stack lines.
+	if (input_line) {
+		max_lines--;
+	}
+
+	// Display each line.
+	for (int8_t i = 0; i < max_lines; i++) {
+		curch = 0;
+			
+		// Append garbage characters.
+		line[curch++] = ' ';
+		line[curch++] = ' ';
+		
+		// Append stack number.
+		_itoa(i, line + 2);
+			
+		// Append : and space.
+		for (int8_t j = curch; j < DISPLAY_MAX_X_CHARS; j++) {
+			// Check where the int to string conversion has left us.
+			if (line[j] == '\0') {
+				// Update counter.
+				curch = j;
+					
+				// Append colon and space separator.
+				line[curch++] = ':';
+				line[curch++] = ' ';
+				line[curch++] = '\0';
+					
+				break;
+			}
+		}
+			
+		// Check if it is a empty or populated stack position.
+		if (i < stack.count) {
+			// Convert number to string.
+			int8_t strlen = fpconv_dtoa(stack.array[i], numstr);
+			numstr[strlen] = '\0';
+			curch--;
+				
+			// Append the number to the line string with a fixed precision.
+			int8_t aftercomma = strlen;
+			for (int8_t j = 0; j < (DISPLAY_MAX_X_CHARS - curch); j++) {
+				// Check if we reached the end already.
+				if (numstr[j] == '\0') {
+					break;
+				} else if ((j - aftercomma) > FLOAT_PRECISION) {
+					break;
+				}
+					
+				line[curch++] = numstr[j];
+					
+				// Start counting the fixed precision.
+				if ((numstr[j] == '.') && (j < aftercomma)) {
+					aftercomma = j;
+				}
+			}
+				
+			// Finish the line string.
+			line[curch++] = '\0';
+		}
+			
+		// Display the stack line.
+		if (input_line) {
+			PrintXY(1, DISPLAY_MAX_LINES - i - 1, line,
+					TEXT_MODE_NORMAL, TEXT_COLOR_BLACK);
+		} else {
+			PrintXY(1, DISPLAY_MAX_LINES - i, line,
+					TEXT_MODE_NORMAL, TEXT_COLOR_BLACK);
+		}
+	}
+}
+
+/**
  * Pushes a number into the stack.
  * 
  * @param  stack Stack structure.
  * @param  num   Number to be pushed into the stack.
  * @return       Number index in the stack.
  */
-int stack_push(stack_t *stack, const long double num) {
+int8_t stack_push(stack_t *stack, const long double num) {
 	// Reallocate the memory and append the item to it.
 	stack->array = sys_realloc(stack->array,
 							   sizeof(long double) * (stack->count + 1));
