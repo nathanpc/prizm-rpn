@@ -172,7 +172,8 @@ void show_stack_lines(const stack_t stack, const bool input_line) {
 		// Check if it is a empty or populated stack position.
 		if (i < stack.count) {
 			// Convert number to string.
-			int8_t strlen = fpconv_dtoa(stack.array[i], numstr);
+			int8_t strlen = fpconv_dtoa(stack.array[stack.count - i - 1],
+										numstr);
 			numstr[strlen] = '\0';
 			curch--;
 				
