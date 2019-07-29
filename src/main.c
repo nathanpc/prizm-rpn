@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <fxcg/display.h>
 #include "stack.h"
+#include "msgbox.h"
 
 
 int main() {

@@ -16,8 +16,11 @@
 #include <fxcg/keyboard.h>
 #include <fxcg/heap.h>
 #include <fxcg/misc.h>
+
 #include "fpconv.h"
 #include "itoa.h"
+#include "misc.h"
+#include "msgbox.h"
 
 // Private methods.
 void clear_line(char *line);
@@ -71,7 +74,7 @@ void stack_show(stack_t *stack) {
 				if ((*stack).count > 0) {
 					stack_push(stack, stack->array[stack->count - 1]);
 				} else {
-					// TODO: Show error.
+					msgbox_show("Nothing on stack\nto duplicate.");
 				}
 			} else {
 				// Push the number to the stack.
@@ -186,7 +189,7 @@ void show_stack_lines(const stack_t stack, const bool input_line) {
 				} else if ((j - aftercomma) > FLOAT_PRECISION) {
 					break;
 				}
-					
+				
 				line[curch++] = numstr[j];
 					
 				// Start counting the fixed precision.
@@ -236,7 +239,7 @@ int8_t stack_push(stack_t *stack, const long double num) {
 long double stack_pop(stack_t *stack) {
 	// Check if there's anything in the stack to be popped.
 	if ((*stack).count == 0) {
-		// TODO: Show a error message.
+		msgbox_show("Nothing on the\nstack to pop.");
 		return 0;
 	}
 	
@@ -259,11 +262,10 @@ bool stack_push_str(stack_t *stack, const char *str) {
 	
 	// Check for conversion errors.
 	if ((n == 0.0L) && (str == endptr)) {
-		// TODO: Error, invalid number.
-		stack_push(stack, 0.321L);
+		msgbox_show("Invalid number.");
 		return false;
 	} else if (errno == ERANGE) {
-		// TODO: Number way too big.
+		msgbox_show("Number is out of range.");
 		return false;
 	}
 	
