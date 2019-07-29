@@ -29,5 +29,6 @@ void stack_show(stack_t *stack);
 void stack_init(stack_t *stack);
 int8_t stack_push(stack_t *stack, const long double num);
 long double stack_pop(stack_t *stack);
+bool stack_push_str(stack_t *stack, const char *str);
 
 #endif /* _STACK_H_ */

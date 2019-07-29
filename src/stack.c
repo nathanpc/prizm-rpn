@@ -8,8 +8,10 @@
 #include "stack.h"
 
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>
 #include <fxcg/display.h>
 #include <fxcg/keyboard.h>
 #include <fxcg/heap.h>
@@ -18,6 +20,8 @@
 #include "itoa.h"
 
 // Private methods.
+void clear_line(char *line);
+void append_char(char *str, const char c);
 void show_stack_lines(const stack_t stack, const bool input_line);
 
 
@@ -38,6 +42,9 @@ void stack_init(stack_t *stack) {
  */
 void stack_show(stack_t *stack) {
 	int key;
+	bool in_exp = false;
+	char input_line[DISPLAY_MAX_X_CHARS];
+	clear_line(input_line);
 
 	while (true) {
 		// Clear the screen.
@@ -45,7 +52,13 @@ void stack_show(stack_t *stack) {
 		DisplayStatusArea();
 		
 		// Show stack items.
-		show_stack_lines(*stack, true);
+		show_stack_lines(*stack, input_line[2] != '\0');
+		
+		// Show input line.
+		if (input_line[2] != '\0') {
+			PrintXY(1, DISPLAY_MAX_LINES, input_line,
+					TEXT_MODE_NORMAL, TEXT_COLOR_BLACK);
+		}
 		
 		// Wait until a key is pressed.
 		GetKey(&key);
@@ -53,13 +66,60 @@ void stack_show(stack_t *stack) {
 		// Do something with the key press.
 		switch (key) {
 		case KEY_CTRL_EXE:
+			if (input_line[2] == '\0') {
+				// DUP
+				if ((*stack).count > 0) {
+					stack_push(stack, stack->array[stack->count - 1]);
+				} else {
+					// TODO: Show error.
+				}
+			} else {
+				// Push the number to the stack.
+				if (stack_push_str(stack, input_line + 2)) {
+					clear_line(input_line);
+				}
+			}
+			
+			in_exp = false;
+			break;
+		case KEY_CTRL_DEL:
+			stack_pop(stack);
+			in_exp = false;
+			break;
+		case KEY_CTRL_AC:
+			clear_line(input_line);
+			in_exp = false;
 			break;
 		case KEY_CTRL_EXIT:
 			Bdisp_AllClr_VRAM();
+			in_exp = false;
 			break;
-		case KEY_CTRL_UP:
+		case KEY_CHAR_0:
+		case KEY_CHAR_1:
+		case KEY_CHAR_2:
+		case KEY_CHAR_3:
+		case KEY_CHAR_4:
+		case KEY_CHAR_5:
+		case KEY_CHAR_6:
+		case KEY_CHAR_7:
+		case KEY_CHAR_8:
+		case KEY_CHAR_9:
+		case KEY_CHAR_DP:
+			// Append number to string.
+			append_char(input_line, key);
 			break;
-		case KEY_CTRL_DOWN:
+		case KEY_CHAR_EXP:
+			append_char(input_line, 'E');
+			in_exp = true;
+			break;
+		case KEY_CHAR_PMINUS:
+			if (in_exp) {
+				// Inserting a minus inside a EXP.
+				append_char(input_line, '-');
+			} else {
+				// Invert the current input number.
+				// TODO: Push to the stack and then INV.
+			}
 			break;
 		}
 	}
@@ -179,7 +239,60 @@ long double stack_pop(stack_t *stack) {
 		return 0;
 	}
 	
+	stack->array = sys_realloc(stack->array,
+							   sizeof(long double) * (stack->count - 1));
 	stack->count--;
 	return 0;
 }
 
+/**
+ * Converts a string to a number and pushes it to the stack.
+ * 
+ * @param  stack Stack structure.
+ * @param  str   Number string.
+ * @return       TRUE if the conversion went well.
+ */
+bool stack_push_str(stack_t *stack, const char *str) {
+	char *endptr;
+	double n = strtod(str, &endptr);
+	
+	// Check for conversion errors.
+	if ((n == 0.0L) && (str == endptr)) {
+		// TODO: Error, invalid number.
+		stack_push(stack, 0.321L);
+		return false;
+	} else if (errno == ERANGE) {
+		// TODO: Number way too big.
+		return false;
+	}
+	
+	stack_push(stack, n);
+	return true;
+}
+
+/**
+ * Append a single character to the end of a string.
+ * 
+ * @param str String to be manipulated.
+ * @param c   Character to be appended.
+ */
+void append_char(char *str, const char c) {
+	for (uint8_t i = 0; i < DISPLAY_MAX_X_CHARS; i++) {
+		if (str[i] == '\0') {
+			str[i] = c;
+			str[i + 1] = '\0';
+			break;
+		}
+	}
+}
+
+/**
+ * Clears a line string.
+ * 
+ * @param line Line string to be cleared.
+ */
+void clear_line(char *line) {
+	line[0] = ' ';
+	line[1] = ' ';
+	line[2] = '\0';
+}
