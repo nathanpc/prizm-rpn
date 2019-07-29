@@ -26,6 +26,6 @@ int main() {
 	
 	// Display the stack and start the event loop.
 	stack_show(&stack);
-
+	
 	return 0;
 }
