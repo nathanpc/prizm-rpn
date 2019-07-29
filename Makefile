@@ -44,6 +44,7 @@ $(ELFBIN): $(OBJECTS)
 
 $(TARGET): $(ELFBIN)
 	$(MKG3A) $(MKG3AFLAGS) $< $@
+	du -h $(TARGET)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
