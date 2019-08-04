@@ -20,11 +20,13 @@
 #include "fpconv.h"
 #include "itoa.h"
 #include "misc.h"
+#include "operations.h"
 #include "msgbox.h"
 
 // Private methods.
 void clear_line(char *line);
 void append_char(char *str, const char c);
+void push_if_available(stack_t *stack, char *str);
 void show_stack_lines(const stack_t stack, const bool input_line);
 
 
@@ -71,11 +73,7 @@ void stack_show(stack_t *stack) {
 		case KEY_CTRL_EXE:
 			if (input_line[2] == '\0') {
 				// DUP
-				if ((*stack).count > 0) {
-					stack_push(stack, stack->array[stack->count - 1]);
-				} else {
-					msgbox_show("Nothing on stack\nto duplicate.");
-				}
+				dup(stack);
 			} else {
 				// Push the number to the stack.
 				if (stack_push_str(stack, input_line + 2)) {
@@ -121,8 +119,64 @@ void stack_show(stack_t *stack) {
 				append_char(input_line, '-');
 			} else {
 				// Invert the current input number.
-				// TODO: Push to the stack and then INV.
+				neg(stack);
 			}
+			break;
+		case KEY_CHAR_PLUS:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			add(stack);
+			break;
+		case KEY_CHAR_MINUS:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			subtract(stack);
+			break;
+		case KEY_CHAR_MULT:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			multiply(stack);
+			break;
+		case KEY_CHAR_FRAC:
+		case KEY_CHAR_DIV:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			divide(stack);
+			break;
+		case KEY_CHAR_LOG:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			_log(stack);
+			break;
+		case KEY_CHAR_LN:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			ln(stack);
+			break;
+		case KEY_CHAR_SIN:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			_sin(stack);
+			break;
+		case KEY_CHAR_COS:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			_cos(stack);
+			break;
+		case KEY_CHAR_TAN:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			_tan(stack);
+			break;
+		case KEY_CHAR_SQUARE:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			square(stack);
+			break;
+		case KEY_CHAR_POW:
+			push_if_available(stack, input_line);
+			in_exp = false;
+			_pow(stack);
 			break;
 		}
 	}
@@ -243,10 +297,12 @@ long double stack_pop(stack_t *stack) {
 		return 0;
 	}
 	
+	long double n = stack->array[stack->count - 1];
 	stack->array = sys_realloc(stack->array,
 							   sizeof(long double) * (stack->count - 1));
 	stack->count--;
-	return 0;
+	
+	return n;
 }
 
 /**
@@ -271,6 +327,22 @@ bool stack_push_str(stack_t *stack, const char *str) {
 	
 	stack_push(stack, n);
 	return true;
+}
+
+/**
+ * Pushes a number string into the stack if it is not empty.
+ * 
+ * @param stack Stack structure.
+ * @param str   Number string with 2 garbage bytes.
+ */
+void push_if_available(stack_t *stack, char *str) {
+	// Check if empty.
+	if (str[2] != '\0') {
+		stack_push_str(stack, str + 2);
+	}
+	
+	// Clear the input line.
+	clear_line(str);
 }
 
 /**

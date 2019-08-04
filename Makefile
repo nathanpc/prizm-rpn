@@ -31,7 +31,7 @@ TARGET = $(ELFBIN:.bin=.g3a)
 # Flags.
 CFLAGS = -std=c99 -mb -ffreestanding -flto -Os -mhitachi -Wall -Wextra -I$(LIBFXCGPATH)/include 
 LDFLAGS = -Os -L$(LIBFXCGPATH)/lib -ffreestanding -flto -nostartfiles -T$(LIBFXCGPATH)/toolchain/prizm.x -Wl,-static -Wl,-gc-sections
-LIBS = -lfxcg -lc -lgcc
+LIBS = -lfxcg -lc -lgcc -lm
 MKG3AFLAGS = -i uns:icon_unselected.bmp -i sel:icon_selected.bmp -n basic:$(NAME) -n $(NAME)
 
 
